@@ -373,7 +373,7 @@
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    getDocs, query, limit, onSnapshot, writeBatch
+    getDocs, query, onSnapshot, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
@@ -413,21 +413,29 @@
     return { paid, status, cls };
   }
 
-  async function ensureSeeded() {
+  async function ensureRosterSynced() {
     if (!state.isEditor) return;
-    const snap = await getDocs(query(STUDENTS_COL, limit(1)));
-    if (!snap.empty) return;
-
-    setStatus("Inicializando alumnos (primera vez)…", "hint");
-
+    const snap = await getDocs(STUDENTS_COL);
+    const existing = new Set(
+      snap.docs.map((d) => {
+        const v = d.data();
+        return `${(v.class || "").trim()}|${(v.name || "").trim()}`;
+      })
+    );
     const batch = writeBatch(db);
+    let added = 0;
     for (const cls of INITIAL.classes) {
       for (const name of (INITIAL.studentsByClass[cls] || [])) {
+        const key = `${cls}|${name}`;
+        if (existing.has(key)) continue;
         const ref = doc(STUDENTS_COL);
         batch.set(ref, { name, class: cls, bus:false, ent:false, createdAt: Date.now() });
+        added++;
       }
     }
+    if (!added) return;
     await batch.commit();
+    setStatus(`Sincronizados ${added} alumnos nuevos en Firestore.`, "ok");
   }
 
   function renderTabsAndSelect() {
@@ -649,7 +657,7 @@
       state.isEditor = false;
     }
 
-    try { await ensureSeeded(); }
+    try { await ensureRosterSynced(); }
     catch (e) { console.error(e); setStatus("No se pudo inicializar. Revisa reglas y recarga.", "err"); }
 
     renderAll();
