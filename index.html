@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pagos excursión</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
+    body { margin:0; background:#f6f7f9; color:#111; }
+    header { padding:14px 16px; background:#111; color:#fff; position:sticky; top:0; z-index:10; }
+    header h1 { margin:0; font-size:16px; font-weight:900; }
+    main { padding:14px 16px; max-width:980px; margin:0 auto; }
+    .card { background:#fff; border-radius:14px; padding:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:12px; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .row > * { flex: 1 1 auto; }
+    input[type="text"], select {
+      width:100%; box-sizing:border-box; padding:10px 12px; border-radius:12px; border:1px solid #d7dbe0; background:#fff;
+    }
+    .btn { border:0; border-radius:12px; padding:10px 12px; font-weight:900; cursor:pointer; }
+    .btn.primary { background:#111; color:#fff; }
+    .btn.ghost { background:#eef0f3; }
+    .btn.danger { background:#ffebee; }
+    .tabs {
+      display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
+      -webkit-overflow-scrolling: touch;
+      padding:6px 2px 10px 2px;
+      border-bottom: 1px solid #eef0f3;
+      margin-bottom: 10px;
+    }
+    .tab {
+      flex: 0 0 auto; white-space:nowrap;
+      padding:10px 12px; border-radius:999px;
+      border:1px solid #d7dbe0; background:#fff;
+      cursor:pointer; font-weight:900;
+    }
+    .tab.active { background:#111; color:#fff; border-color:#111; }
+    table { width:100%; border-collapse:collapse; }
+    th, td { padding:10px 8px; border-bottom:1px solid #eef0f3; text-align:left; vertical-align:middle; }
+    th { font-size:12px; color:#444; text-transform:uppercase; letter-spacing:.04em; }
+    .right { text-align:right; }
+    .muted { color:#666; font-size:13px; }
+    .small { font-size:12px; }
+    .kpi { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+    .kpi > div { flex:1 1 140px; background:#f3f5f8; border-radius:14px; padding:10px; }
+    .kpi b { font-size:18px; display:block; }
+    .checkbox { transform:scale(1.25); }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-weight:900; font-size:12px; }
+    .pill.ok { background:#e8f5e9; }
+    .pill.mid { background:#fff8e1; }
+    .pill.no { background:#ffebee; }
+    .del { cursor:pointer; font-weight:900; padding:6px 10px; border-radius:10px; border:1px solid #d7dbe0; background:#fff; }
+    .hint { background:#fff8e1; border:1px solid #ffe0b2; padding:10px 12px; border-radius:12px; }
+    .err { background:#ffebee; border:1px solid #ffcdd2; padding:10px 12px; border-radius:12px; }
+  </style>
+</head>
+<body>
+<header><h1>Control de pagos — Excursión</h1></header>
+<main>
+
+  <noscript>
+    <div class="card err">
+      <b>JavaScript está desactivado o bloqueado.</b><br>
+      En iPhone, si lo abres en la “vista previa” de Archivos/WhatsApp/Mail, a veces bloquea el script y por eso no salen pestañas ni alumnos.<br>
+      Ábrelo en <b>Safari</b> (Compartir → “Abrir en Safari”).
+    </div>
+  </noscript>
+
+  <section class="card">
+    <div class="row">
+      <div>
+        <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entresramas)</span><br>
+        <span class="muted small">Se guarda en el móvil automáticamente.</span>
+      </div>
+      <div class="right">
+        <button class="btn ghost" id="btnResetAll" type="button">Reset todo</button>
+      </div>
+    </div>
+
+    <div class="kpi">
+      <div><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
+      <div><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
+      <div><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
+      <div><span class="muted">Pendiente</span><b id="kpiPendiente">—</b></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="hint small">
+      <b>Pestañas:</b> si no caben, desliza a izquierda/derecha.  
+      Si aún así no aparecen, usa el desplegable “Clase/Módulo”.
+    </div>
+
+    <div style="margin-top:10px;">
+      <label class="small muted">Clase / Módulo</label>
+      <select id="classSelect">
+        <option value="1º DAM">1º DAM</option>
+<option value="2º DAM">2º DAM</option>
+<option value="1º ASIR">1º ASIR</option>
+<option value="1º Marketing">1º Marketing</option>
+<option value="2º Marketing">2º Marketing</option>
+      </select>
+    </div>
+
+    <div class="tabs" id="tabs" aria-label="Pestañas de clases">
+      <button type="button" class="tab active" data-clase="1º DAM">1º DAM</button>
+<button type="button" class="tab" data-clase="2º DAM">2º DAM</button>
+<button type="button" class="tab" data-clase="1º ASIR">1º ASIR</button>
+<button type="button" class="tab" data-clase="1º Marketing">1º Marketing</button>
+<button type="button" class="tab" data-clase="2º Marketing">2º Marketing</button>
+    </div>
+
+    <div class="row">
+      <div><input id="search" type="text" placeholder="Buscar alumno..." /></div>
+      <div class="right"><button class="btn ghost" id="btnResetClass" type="button">Reset clase</button></div>
+    </div>
+
+    <div class="row" style="margin-top:10px;">
+      <div><input id="newName" type="text" placeholder="Añadir alumno a esta pestaña (opcional)..." /></div>
+      <div class="right"><button class="btn primary" id="btnAdd" type="button">Añadir</button></div>
+    </div>
+
+    <div style="margin-top:10px; overflow:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Alumno</th>
+            <th class="right">Autobús<br><span class="muted small">11€</span></th>
+            <th class="right">Entresramas<br><span class="muted small">14€</span></th>
+            <th class="right">Total</th>
+            <th>Estado</th>
+            <th class="right">Borrar</th>
+          </tr>
+        </thead>
+        <tbody id="tbody">
+          <tr><td colspan="6" class="muted">Cargando alumnos…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2 style="margin:0 0 8px 0; font-size:16px;">Copia de seguridad (TXT)</h2>
+    <p class="muted small" style="margin-top:0;">Exporta un TXT para guardarlo y luego podrás importarlo.</p>
+    <div class="row">
+      <div><button class="btn primary" id="btnExport" type="button">Exportar TXT</button></div>
+      <div>
+        <label class="btn ghost" style="display:inline-block;text-align:center;">
+          Importar TXT
+          <input id="fileImport" type="file" accept=".txt" style="display:none;" />
+        </label>
+      </div>
+      <div class="right"><button class="btn danger" id="btnWipe" type="button">Borrar todo</button></div>
+    </div>
+  </section>
+
+<script>
+(() => {
+  const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
+
+  const ALUMNOS_INICIALES = {
+    "1º DAM": ["Mario Hernández Ramos", "Sergio Jiménez Del Ojo", "Oscar Labarta González", "David Lázaro Vargas", "Carlos Mejías Campuzano", "Vicente Muñoz Polanco Quirós", "Guillermo Navascués Martínez", "Nuria Palacios Molinares", "María Pérez Jordán", "Hugo Ramírez Rodríguez", "Juan Yeray Vargas Gómez", "Juan Carlos Zamora Rodríguez", "Marcos Cabrera Pérez", "Gonzalo Castellano Ruiz", "Julia Delgado Iglesias", "Alejandro Domínguez Mora", "Alejandro Florido Caro", "Miguel Gómez Fernández", "Jaime González Ruiz", "Alejandro Guerrero Domínguez", "Román Gutiérrez Jurado"],
+    "2º DAM": [],
+    "1º ASIR": [],
+    "1º Marketing": [],
+    "2º Marketing": []
+  };
+
+  // Clave nueva para evitar datos viejos en el móvil
+  const KEY_DATA = "excursion_pagos_v5";
+
+  const $ = (id) => document.getElementById(id);
+  const money = (n) => `${n}€`;
+
+  function defaultData() {
+    const data = {};
+    for (const clase of Object.keys(ALUMNOS_INICIALES)) {
+      data[clase] = ALUMNOS_INICIALES[clase].map(n => ({ nombre:n, bus:false, ent:false }));
+    }
+    return data;
+  }
+
+  function mergeInitial(data) {
+    for (const clase of Object.keys(ALUMNOS_INICIALES)) {
+      if (!data[clase]) data[clase] = [];
+      const existing = new Set(data[clase].map(a => (a.nombre || "").toLowerCase()));
+      for (const n of ALUMNOS_INICIALES[clase]) {
+        if (!existing.has(n.toLowerCase())) data[clase].push({ nombre:n, bus:false, ent:false });
+      }
+    }
+    return data;
+  }
+
+  function loadData() {
+    const raw = localStorage.getItem(KEY_DATA);
+    if (!raw) {
+      const init = defaultData();
+      localStorage.setItem(KEY_DATA, JSON.stringify(init));
+      return init;
+    }
+    try {
+      return mergeInitial(JSON.parse(raw));
+    } catch {
+      const init = defaultData();
+      localStorage.setItem(KEY_DATA, JSON.stringify(init));
+      return init;
+    }
+  }
+
+  function saveData(data) { localStorage.setItem(KEY_DATA, JSON.stringify(data)); }
+
+  let state = {
+    data: loadData(),
+    clase: "1º DAM",
+    search: ""
+  };
+
+  function calcAlumno(a) {
+    const paid = (a.bus ? PRICE_BUS : 0) + (a.ent ? PRICE_ENT : 0);
+    let status="Pendiente", cls="no";
+    if (paid === 0) { status="Pendiente"; cls="no"; }
+    else if (paid === PRICE_TOTAL) { status="Pagado"; cls="ok"; }
+    else { status="Parcial"; cls="mid"; }
+    return { paid, status, cls };
+  }
+
+  function renderSelect() {
+    const sel = $("classSelect");
+    if (!sel) return;
+    // si por lo que sea está vacío, lo repoblamos
+    if (sel.options.length === 0) {
+      for (const clase of Object.keys(state.data)) {
+        const opt = document.createElement("option");
+        opt.value = clase; opt.textContent = clase;
+        sel.appendChild(opt);
+      }
+    }
+    sel.value = state.clase;
+    sel.onchange = () => { state.clase = sel.value; renderAll(); };
+  }
+
+  function renderTabs() {
+    const tabs = $("tabs");
+    if (!tabs) return;
+    tabs.querySelectorAll(".tab").forEach(btn => {
+      const clase = btn.getAttribute("data-clase") || btn.textContent.trim();
+      btn.classList.toggle("active", clase === state.clase);
+      btn.onclick = () => {
+        state.clase = clase;
+        $("classSelect").value = clase;
+        renderAll();
+      };
+    });
+  }
+
+  function renderTable() {
+    const tbody = $("tbody");
+    tbody.innerHTML = "";
+
+    const list = state.data[state.clase] || [];
+    const term = (state.search || "").trim().toLowerCase();
+
+    const filtered = list.filter(a => !term || (a.nombre||"").toLowerCase().includes(term));
+    if (filtered.length === 0) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = '<td colspan="6" class="muted">No hay alumnos (o no coincide la búsqueda).</td>';
+      tbody.appendChild(tr);
+      return;
+    }
+
+    filtered.forEach(a => {
+      const idx = state.data[state.clase].indexOf(a);
+      const { paid, status, cls } = calcAlumno(a);
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.textContent = a.nombre;
+
+      const tdBus = document.createElement("td");
+      tdBus.className = "right";
+      const cbBus = document.createElement("input");
+      cbBus.type = "checkbox";
+      cbBus.className = "checkbox";
+      cbBus.checked = !!a.bus;
+      cbBus.onchange = () => { a.bus = cbBus.checked; saveData(state.data); renderAll(); };
+      tdBus.appendChild(cbBus);
+
+      const tdEnt = document.createElement("td");
+      tdEnt.className = "right";
+      const cbEnt = document.createElement("input");
+      cbEnt.type = "checkbox";
+      cbEnt.className = "checkbox";
+      cbEnt.checked = !!a.ent;
+      cbEnt.onchange = () => { a.ent = cbEnt.checked; saveData(state.data); renderAll(); };
+      tdEnt.appendChild(cbEnt);
+
+      const tdTotal = document.createElement("td");
+      tdTotal.className = "right";
+      tdTotal.textContent = money(paid);
+
+      const tdStatus = document.createElement("td");
+      const pill = document.createElement("span");
+      pill.className = "pill " + cls;
+      pill.textContent = status;
+      tdStatus.appendChild(pill);
+
+      const tdDel = document.createElement("td");
+      tdDel.className = "right";
+      const delBtn = document.createElement("button");
+      delBtn.className = "del";
+      delBtn.type = "button";
+      delBtn.textContent = "✕";
+      delBtn.onclick = () => {
+        if (!confirm(`¿Borrar a "${a.nombre}" de ${state.clase}?`)) return;
+        state.data[state.clase].splice(idx, 1);
+        saveData(state.data);
+        renderAll();
+      };
+      tdDel.appendChild(delBtn);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdBus);
+      tr.appendChild(tdEnt);
+      tr.appendChild(tdTotal);
+      tr.appendChild(tdStatus);
+      tr.appendChild(tdDel);
+
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderKPI() {
+    let alumnos=0, pagados=0, recaudado=0;
+    for (const clase of Object.keys(state.data)) {
+      for (const a of state.data[clase]) {
+        alumnos++;
+        const { paid } = calcAlumno(a);
+        recaudado += paid;
+        if (paid === PRICE_TOTAL) pagados++;
+      }
+    }
+    const pendiente = alumnos * PRICE_TOTAL - recaudado;
+    $("kpiAlumnos").textContent = alumnos;
+    $("kpiPagados").textContent = pagados;
+    $("kpiRecaudado").textContent = money(recaudado);
+    $("kpiPendiente").textContent = money(pendiente);
+  }
+
+  function renderAll() {
+    renderSelect();
+    renderTabs();
+    renderTable();
+    renderKPI();
+  }
+
+  $("search").addEventListener("input", (e) => {
+    state.search = e.target.value || "";
+    renderTable();
+  });
+
+  $("btnResetClass").onclick = () => {
+    if (!confirm("¿Resetear pagos de la clase actual? (solo desmarca)")) return;
+    (state.data[state.clase] || []).forEach(a => { a.bus=false; a.ent=false; });
+    saveData(state.data);
+    renderAll();
+  };
+
+  $("btnResetAll").onclick = () => {
+    if (!confirm("¿Resetear pagos de todas las pestañas? (solo desmarca)")) return;
+    for (const clase of Object.keys(state.data)) state.data[clase].forEach(a => { a.bus=false; a.ent=false; });
+    saveData(state.data);
+    renderAll();
+  };
+
+  $("btnAdd").onclick = () => {
+    const name = $("newName").value.trim();
+    if (!name) return;
+    const exists = new Set((state.data[state.clase] || []).map(a => (a.nombre||"").toLowerCase()));
+    if (exists.has(name.toLowerCase())) return alert("Ese alumno ya existe en esta pestaña.");
+    state.data[state.clase].push({ nombre:name, bus:false, ent:false });
+    $("newName").value = "";
+    saveData(state.data);
+    renderAll();
+  };
+
+  $("btnExport").onclick = () => {
+    const payload = { version:5, exportedAt:new Date().toISOString(), data: state.data };
+    const txt = JSON.stringify(payload, null, 2);
+    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "pagos_excursion_backup.txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(a.href);
+  };
+
+  $("fileImport").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    try {
+      const parsed = JSON.parse(text);
+      if (!parsed?.data) throw new Error("Formato inválido");
+      state.data = mergeInitial(parsed.data);
+      saveData(state.data);
+      renderAll();
+      alert("Importación correcta.");
+    } catch {
+      alert("No se ha podido importar. Selecciona un TXT exportado desde esta web.");
+    } finally {
+      e.target.value = "";
+    }
+  });
+
+  $("btnWipe").onclick = () => {
+    if (!confirm("¿Borrar TODO? Se perderán los datos guardados en este móvil.")) return;
+    localStorage.removeItem(KEY_DATA);
+    state.data = loadData();
+    saveData(state.data);
+    renderAll();
+  };
+
+  renderAll();
+})();
+</script>
+</main>
+</body>
+</html>
