@@ -43,26 +43,16 @@
       margin:0 auto;
       display:flex;
       align-items:center;
-      justify-content:space-between;
+      justify-content:center;
       gap:10px;
     }
-    .brand {
-      display:flex;
-      align-items:center;
-      gap:12px;
+    .header-title {
+      margin:0;
       color:#fff;
-    }
-    .brand img { height:32px; width:auto; }
-    .brand-text b { display:block; font-size:14px; letter-spacing:.04em; }
-    .brand-text span { display:block; font-size:11px; opacity:.92; }
-    .price-badge {
-      background:var(--victoria-yellow);
-      color:var(--victoria-green-dark);
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:12px;
+      text-align:center;
+      font-size:19px;
       font-weight:800;
-      white-space:nowrap;
+      letter-spacing:.02em;
     }
     main { padding:16px; max-width:980px; margin:0 auto; }
     .card {
@@ -79,7 +69,7 @@
     }
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .row > * { flex: 1 1 auto; }
-    input[type="text"], select {
+    input[type="text"], input[type="email"], input[type="password"], select {
       width:100%;
       padding:11px 12px;
       border-radius:12px;
@@ -88,7 +78,7 @@
       color:var(--ink);
       font:600 14px "Montserrat", "Segoe UI", sans-serif;
     }
-    input[type="text"]:focus, select:focus {
+    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, select:focus {
       outline:none;
       border-color:var(--victoria-green);
       box-shadow:0 0 0 3px rgba(54, 174, 110, .16);
@@ -195,10 +185,10 @@
     .hint { background:#fff5d8; border:1px solid #f6d483; color:#5f4815; }
     .err { background:#ffe8e8; border:1px solid #f5bcbc; color:#792f2f; }
     .ok { background:#e3f8ec; border:1px solid #b6e4c9; color:#1c5f3d; }
+    .auth-box { margin-top:10px; }
+    .btn[disabled], input[disabled] { opacity:.55; cursor:not-allowed; }
     @media (max-width: 680px) {
-      .brand img { height:28px; }
-      .brand-text b { font-size:13px; }
-      .price-badge { font-size:11px; padding:5px 8px; }
+      .header-title { font-size:16px; }
       th, td { padding:10px 6px; }
     }
   </style>
@@ -206,14 +196,7 @@
 <body>
 <header>
   <div class="header-inner">
-    <div class="brand">
-      <img src="https://victoriafp.com/images/logo/victoria-horizontal-color-rgb.svg" alt="Victoria FP" />
-      <div class="brand-text">
-        <b>Control de pagos</b>
-        <span>Excursión por clase</span>
-      </div>
-    </div>
-    <div class="price-badge">Total 25€</div>
+    <h1 class="header-title">Convivencia Victoria FP 4 marzo 2024</h1>
   </div>
 </header>
 <main>
@@ -222,6 +205,16 @@
     <div class="row" style="margin-top:10px;">
       <div>
         <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas)</span><br>
+      </div>
+    </div>
+
+    <div class="auth-box">
+      <div id="authMode" class="hint small">Modo visualizacion: solo lectura</div>
+      <div class="row" style="margin-top:8px;">
+        <div><input id="editorEmail" type="email" placeholder="Email editor" /></div>
+        <div><input id="editorPass" type="password" placeholder="Clave editor" /></div>
+        <div class="right"><button class="btn ghost" id="btnLoginEditor" type="button">Entrar editor</button></div>
+        <div class="right"><button class="btn ghost" id="btnLogoutEditor" type="button" style="display:none;">Salir editor</button></div>
       </div>
     </div>
 
@@ -328,10 +321,10 @@
   const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+  import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    getDocs, query, where, limit, onSnapshot, writeBatch
+    getDocs, query, limit, onSnapshot, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
@@ -339,6 +332,10 @@
   const db = getFirestore(app);
 
   const STUDENTS_COL = collection(db, "excursion_students");
+  const ALLOWED_EDITOR_UIDS = new Set([
+    "7CAf1CxCw3OEchwhzQjAQupe45D2",
+    "DFV2CdIYCGcDV2pInlAhBKwv5k22"
+  ]);
 
   const $ = (id) => document.getElementById(id);
   const money = (n) => `${n}€`;
@@ -346,7 +343,9 @@
   let state = {
     clase: "1º DAM",
     search: "",
-    students: []
+    students: [],
+    isEditor: false,
+    userEmail: ""
   };
 
   function setStatus(text, kind="hint") {
@@ -366,6 +365,7 @@
   }
 
   async function ensureSeeded() {
+    if (!state.isEditor) return;
     const snap = await getDocs(query(STUDENTS_COL, limit(1)));
     if (!snap.empty) return;
 
@@ -429,6 +429,26 @@
     $("paidProgressFill").style.width = `${paidPct}%`;
   }
 
+  function renderEditorUI() {
+    const canEdit = state.isEditor;
+    $("newName").disabled = !canEdit;
+    $("btnAdd").disabled = !canEdit;
+
+    $("editorEmail").disabled = canEdit;
+    $("editorPass").disabled = canEdit;
+    $("btnLoginEditor").style.display = canEdit ? "none" : "inline-block";
+    $("btnLogoutEditor").style.display = canEdit ? "inline-block" : "none";
+
+    const authMode = $("authMode");
+    if (canEdit) {
+      authMode.className = "ok small";
+      authMode.textContent = `Modo editor activo: ${state.userEmail}`;
+    } else {
+      authMode.className = "hint small";
+      authMode.textContent = "Modo visualizacion: solo lectura";
+    }
+  }
+
   function renderTable() {
     const tbody = $("tbody");
     tbody.innerHTML = "";
@@ -460,6 +480,7 @@
       cbBus.type = "checkbox";
       cbBus.className = "checkbox";
       cbBus.checked = !!s.bus;
+      cbBus.disabled = !state.isEditor;
       cbBus.onchange = async () => {
         try { await updateDoc(doc(STUDENTS_COL, s.id), { bus: cbBus.checked }); }
         catch { alert("No se pudo guardar. Revisa conexión/reglas."); cbBus.checked = !cbBus.checked; }
@@ -472,6 +493,7 @@
       cbEnt.type = "checkbox";
       cbEnt.className = "checkbox";
       cbEnt.checked = !!s.ent;
+      cbEnt.disabled = !state.isEditor;
       cbEnt.onchange = async () => {
         try { await updateDoc(doc(STUDENTS_COL, s.id), { ent: cbEnt.checked }); }
         catch { alert("No se pudo guardar. Revisa conexión/reglas."); cbEnt.checked = !cbEnt.checked; }
@@ -494,7 +516,9 @@
       delBtn.className = "del";
       delBtn.type = "button";
       delBtn.textContent = "✕";
+      delBtn.disabled = !state.isEditor;
       delBtn.onclick = async () => {
+        if (!state.isEditor) return;
         if (!confirm(`¿Borrar a "${s.name}" de ${s.class}?`)) return;
         try { await deleteDoc(doc(STUDENTS_COL, s.id)); }
         catch { alert("No se pudo borrar. Revisa conexión/reglas."); }
@@ -513,6 +537,7 @@
   }
 
   function renderAll() {
+    renderEditorUI();
     renderTabsAndSelect();
     renderTable();
     renderKPI();
@@ -524,6 +549,10 @@
   });
 
   $("btnAdd").onclick = async () => {
+    if (!state.isEditor) {
+      alert("Solo los editores pueden modificar datos.");
+      return;
+    }
     const name = $("newName").value.trim();
     if (!name) return;
     try {
@@ -534,13 +563,49 @@
     }
   };
 
-  try {
-    await signInAnonymously(auth);
-  } catch (e) {
-    console.error(e);
-    setStatus("No se pudo autenticar (anónimo). Revisa Authentication en Firebase.", "err");
-    throw e;
-  }
+  $("btnLoginEditor").onclick = async () => {
+    const email = $("editorEmail").value.trim().toLowerCase();
+    const pass = $("editorPass").value;
+    if (!email || !pass) {
+      alert("Introduce email y clave.");
+      return;
+    }
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      $("editorPass").value = "";
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo iniciar sesion como editor.");
+    }
+  };
+
+  $("btnLogoutEditor").onclick = async () => {
+    try {
+      await signOut(auth);
+    } catch (e) {
+      console.error(e);
+      alert("No se pudo cerrar sesion.");
+    }
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    const email = (user?.email || "").toLowerCase();
+    const uid = user?.uid || "";
+    state.userEmail = email;
+    state.isEditor = !!user && ALLOWED_EDITOR_UIDS.has(uid);
+
+    if (user && !state.isEditor) {
+      await signOut(auth);
+      state.userEmail = "";
+      state.isEditor = false;
+      setStatus("Tu cuenta no tiene permisos de edicion.", "err");
+    }
+
+    try { await ensureSeeded(); }
+    catch (e) { console.error(e); setStatus("No se pudo inicializar. Revisa reglas y recarga.", "err"); }
+
+    renderAll();
+  });
 
   // Realtime
   onSnapshot(query(STUDENTS_COL), (snap) => {
@@ -553,10 +618,6 @@
     console.error(err);
     setStatus("Error conectando a Firebase. Revisa reglas (test mode) y recarga.", "err");
   });
-
-  // Seed
-  try { await ensureSeeded(); }
-  catch (e) { console.error(e); setStatus("No se pudo inicializar. Revisa reglas y recarga.", "err"); }
 
   renderAll();
 </script>
