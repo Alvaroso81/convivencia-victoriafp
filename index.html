@@ -147,12 +147,17 @@
     .kpi { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
     .kpi > div {
       flex:1 1 140px;
-      background:#f6fcf9;
-      border:1px solid #d6ebe0;
+      background:#f7faf8;
+      border:1px solid #dbe8e1;
       border-radius:14px;
       padding:10px;
     }
     .kpi b { font-size:20px; display:block; color:#224f3c; }
+    .kpi-alumnos { background:#f2f7fb !important; border-color:#d8e6f3 !important; }
+    .kpi-pagados { background:#f1fbf5 !important; border-color:#d2ecd9 !important; }
+    .kpi-recaudado { background:#f3faf7 !important; border-color:#d7ebe2 !important; }
+    .kpi-pend-bus { background:#fffaf1 !important; border-color:#f0e3c5 !important; }
+    .kpi-pend-ent { background:#f8f4ff !important; border-color:#e3dbf4 !important; }
     .progress-card {
       background:#f9fdfb;
       border:1px solid #dcede4;
@@ -234,11 +239,11 @@
 
     <div class="summary-title">Resumen global (todas las clases)</div>
     <div class="kpi">
-      <div><span class="muted">Alumnos</span><b id="gKpiAlumnos">—</b></div>
-      <div><span class="muted">Pagados (25€)</span><b id="gKpiPagados">—</b></div>
-      <div><span class="muted">Recaudado</span><b id="gKpiRecaudado">—</b></div>
-      <div><span class="muted">Pendiente autobús</span><b id="gKpiPendBus">—</b></div>
-      <div><span class="muted">Pendiente entre ramas</span><b id="gKpiPendEnt">—</b></div>
+      <div class="kpi-alumnos"><span class="muted">Alumnos</span><b id="gKpiAlumnos">—</b></div>
+      <div class="kpi-pagados"><span class="muted">Pagados (25€)</span><b id="gKpiPagados">—</b></div>
+      <div class="kpi-recaudado"><span class="muted">Recaudado</span><b id="gKpiRecaudado">—</b></div>
+      <div class="kpi-pend-bus"><span class="muted">Pendiente autobús</span><b id="gKpiPendBus">—</b></div>
+      <div class="kpi-pend-ent"><span class="muted">Pendiente entre ramas</span><b id="gKpiPendEnt">—</b></div>
     </div>
 
     <div class="row" style="margin-top:12px;">
@@ -253,11 +258,11 @@
 
     <div class="summary-title">Resumen por clase (seleccionada)</div>
     <div class="kpi">
-      <div><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
-      <div><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
-      <div><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
-      <div><span class="muted">Pendiente autobús</span><b id="kpiPendBus">—</b></div>
-      <div><span class="muted">Pendiente entre ramas</span><b id="kpiPendEnt">—</b></div>
+      <div class="kpi-alumnos"><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
+      <div class="kpi-pagados"><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
+      <div class="kpi-recaudado"><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
+      <div class="kpi-pend-bus"><span class="muted">Pendiente autobús</span><b id="kpiPendBus">—</b></div>
+      <div class="kpi-pend-ent"><span class="muted">Pendiente entre ramas</span><b id="kpiPendEnt">—</b></div>
     </div>
 
     <div class="row" style="margin-top:12px;">
