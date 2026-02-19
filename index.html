@@ -158,12 +158,24 @@
       padding:10px;
     }
     .kpi b { font-size:20px; display:block; color:#224f3c; }
-    .name-box {
+    .progress-card {
       background:#f9fdfb;
       border:1px solid #dcede4;
       border-radius:12px;
-      padding:10px;
-      min-height:78px;
+      padding:12px;
+    }
+    .progress-bar {
+      height:10px;
+      border-radius:999px;
+      background:#ddecdf;
+      overflow:hidden;
+      margin-top:8px;
+    }
+    .progress-fill {
+      height:100%;
+      width:0%;
+      background:linear-gradient(90deg, var(--victoria-green-dark), var(--victoria-green), var(--victoria-blue));
+      transition:width .25s ease;
     }
     .checkbox { transform:scale(1.25); accent-color:var(--victoria-green); }
     .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-weight:800; font-size:12px; }
@@ -210,7 +222,6 @@
     <div class="row" style="margin-top:10px;">
       <div>
         <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas)</span><br>
-        <span class="muted small">Datos compartidos en Firestore (tiempo real).</span>
       </div>
     </div>
 
@@ -223,13 +234,12 @@
     </div>
 
     <div class="row" style="margin-top:12px;">
-      <div class="name-box">
-        <b id="paidTitle">Han pagado todo (0)</b>
-        <div id="paidList" class="muted small">—</div>
-      </div>
-      <div class="name-box">
-        <b id="pendingTitle">Pendientes (0)</b>
-        <div id="pendingList" class="muted small">—</div>
+      <div class="progress-card">
+        <b id="pendingSummary">Pendientes: 0 de 0 (0%)</b>
+        <div id="paidSummary" class="muted small">Pagado completo: 0 de 0 (0%)</div>
+        <div class="progress-bar">
+          <div id="paidProgressFill" class="progress-fill"></div>
+        </div>
       </div>
     </div>
 
@@ -398,30 +408,25 @@
     const classStudents = state.students.filter(s => s.class === state.clase);
     const totalStudents = classStudents.length;
     let recaudado = 0, pagados = 0, pendingBus = 0, pendingEnt = 0;
-    const paidNames = [];
-    const pendingNames = [];
     for (const s of classStudents) {
       const { paid } = calcPaid(s);
       recaudado += paid;
-      if (paid === PRICE_TOTAL) {
-        pagados++;
-        paidNames.push(s.name);
-      } else {
-        pendingNames.push(s.name);
-      }
+      if (paid === PRICE_TOTAL) pagados++;
       if (!s.bus) pendingBus += PRICE_BUS;
       if (!s.ent) pendingEnt += PRICE_ENT;
     }
+    const pendingCount = totalStudents - pagados;
+    const paidPct = totalStudents ? Math.round((pagados / totalStudents) * 100) : 0;
+    const pendingPct = totalStudents ? Math.round((pendingCount / totalStudents) * 100) : 0;
 
     $("kpiAlumnos").textContent = totalStudents;
     $("kpiPagados").textContent = pagados;
     $("kpiRecaudado").textContent = money(recaudado);
     $("kpiPendBus").textContent = money(pendingBus);
     $("kpiPendEnt").textContent = money(pendingEnt);
-    $("paidTitle").textContent = `Han pagado todo (${paidNames.length})`;
-    $("pendingTitle").textContent = `Pendientes (${pendingNames.length})`;
-    $("paidList").textContent = paidNames.length ? paidNames.join(", ") : "Ninguno";
-    $("pendingList").textContent = pendingNames.length ? pendingNames.join(", ") : "Ninguno";
+    $("pendingSummary").textContent = `Pendientes: ${pendingCount} de ${totalStudents} (${pendingPct}%)`;
+    $("paidSummary").textContent = `Pagado completo: ${pagados} de ${totalStudents} (${paidPct}%)`;
+    $("paidProgressFill").style.width = `${paidPct}%`;
   }
 
   function renderTable() {
