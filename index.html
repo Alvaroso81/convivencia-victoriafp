@@ -4,64 +4,212 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Pagos excursión (Firebase)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
-    body { margin:0; background:#f6f7f9; color:#111; }
-    header { padding:14px 16px; background:#111; color:#fff; position:sticky; top:0; z-index:10; }
-    header h1 { margin:0; font-size:16px; font-weight:900; }
-    main { padding:14px 16px; max-width:980px; margin:0 auto; }
-    .card { background:#fff; border-radius:14px; padding:14px; box-shadow:0 2px 10px rgba(0,0,0,.06); margin-bottom:12px; }
+    :root {
+      --victoria-green: #36ae6e;
+      --victoria-green-dark: #2d8f5a;
+      --victoria-yellow: #fdc73b;
+      --victoria-blue: #2cbce9;
+      --ink: #133022;
+      --panel: #ffffff;
+      --line: #d5e7de;
+      --bg: #ecf7f1;
+      --muted: #4b6a5a;
+      font-family: "Montserrat", "Segoe UI", sans-serif;
+    }
+    * { box-sizing:border-box; }
+    body {
+      margin:0;
+      color:var(--ink);
+      background:
+        radial-gradient(1200px 600px at 0% -10%, #d7f5e7 0%, transparent 60%),
+        radial-gradient(900px 500px at 100% 0%, #fff2cf 0%, transparent 55%),
+        var(--bg);
+    }
+    header {
+      position:sticky;
+      top:0;
+      z-index:10;
+      padding:10px 16px;
+      border-bottom:1px solid #2a8a57;
+      background:linear-gradient(120deg, var(--victoria-green-dark) 0%, var(--victoria-green) 52%, #34a868 100%);
+      backdrop-filter: blur(4px);
+    }
+    .header-inner {
+      max-width:980px;
+      margin:0 auto;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      color:#fff;
+    }
+    .brand img { height:32px; width:auto; }
+    .brand-text b { display:block; font-size:14px; letter-spacing:.04em; }
+    .brand-text span { display:block; font-size:11px; opacity:.92; }
+    .price-badge {
+      background:var(--victoria-yellow);
+      color:var(--victoria-green-dark);
+      border-radius:999px;
+      padding:6px 10px;
+      font-size:12px;
+      font-weight:800;
+      white-space:nowrap;
+    }
+    main { padding:16px; max-width:980px; margin:0 auto; }
+    .card {
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:20px;
+      padding:16px;
+      box-shadow:0 10px 30px rgba(35, 108, 74, .09);
+      margin-bottom:14px;
+    }
+    .card-top {
+      background:linear-gradient(140deg, #ffffff 0%, #f1fcf7 72%);
+      border-color:#b9ddc8;
+    }
     .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .row > * { flex: 1 1 auto; }
     input[type="text"], select {
-      width:100%; box-sizing:border-box; padding:10px 12px; border-radius:12px; border:1px solid #d7dbe0; background:#fff;
+      width:100%;
+      padding:11px 12px;
+      border-radius:12px;
+      border:1px solid #c7ddd1;
+      background:#fff;
+      color:var(--ink);
+      font:600 14px "Montserrat", "Segoe UI", sans-serif;
     }
-    .btn { border:0; border-radius:12px; padding:10px 12px; font-weight:900; cursor:pointer; }
-    .btn.primary { background:#111; color:#fff; }
-    .btn.ghost { background:#eef0f3; }
-    .btn.danger { background:#ffebee; }
+    input[type="text"]:focus, select:focus {
+      outline:none;
+      border-color:var(--victoria-green);
+      box-shadow:0 0 0 3px rgba(54, 174, 110, .16);
+    }
+    .btn {
+      border:0;
+      border-radius:12px;
+      padding:11px 14px;
+      font-weight:800;
+      cursor:pointer;
+      font-family:"Montserrat", "Segoe UI", sans-serif;
+    }
+    .btn.primary {
+      background:var(--victoria-green-dark);
+      color:#fff;
+      box-shadow:0 8px 18px rgba(45, 143, 90, .25);
+    }
+    .btn.ghost {
+      background:#e9f5ef;
+      color:var(--victoria-green-dark);
+      border:1px solid #c8e2d4;
+    }
     .tabs {
-      display:flex; gap:8px; overflow-x:auto; overflow-y:hidden;
+      display:flex;
+      gap:8px;
+      overflow-x:auto;
+      overflow-y:hidden;
       -webkit-overflow-scrolling: touch;
-      padding:6px 2px 10px 2px;
-      border-bottom: 1px solid #eef0f3;
-      margin-bottom: 10px;
+      padding:6px 2px 11px 2px;
+      border-bottom:1px solid #deece4;
+      margin-bottom:12px;
     }
     .tab {
-      flex: 0 0 auto; white-space:nowrap;
-      padding:10px 12px; border-radius:999px;
-      border:1px solid #d7dbe0; background:#fff;
-      cursor:pointer; font-weight:900;
+      flex:0 0 auto;
+      white-space:nowrap;
+      padding:9px 12px;
+      border-radius:999px;
+      border:1px solid #cde2d6;
+      background:#fff;
+      cursor:pointer;
+      font-weight:800;
+      color:#28513f;
     }
-    .tab.active { background:#111; color:#fff; border-color:#111; }
-    table { width:100%; border-collapse:collapse; }
-    th, td { padding:10px 8px; border-bottom:1px solid #eef0f3; text-align:left; vertical-align:middle; }
-    th { font-size:12px; color:#444; text-transform:uppercase; letter-spacing:.04em; }
+    .tab.active {
+      background:linear-gradient(120deg, var(--victoria-green-dark), var(--victoria-green));
+      color:#fff;
+      border-color:#2f9b61;
+    }
+    table { width:100%; border-collapse:separate; border-spacing:0; }
+    th, td { padding:11px 8px; border-bottom:1px solid #e6f2eb; text-align:left; vertical-align:middle; }
+    th {
+      font-size:11px;
+      color:#39604f;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+      background:#f4fbf7;
+    }
     .right { text-align:right; }
-    .muted { color:#666; font-size:13px; }
+    .muted { color:var(--muted); font-size:13px; }
     .small { font-size:12px; }
     .kpi { display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
-    .kpi > div { flex:1 1 140px; background:#f3f5f8; border-radius:14px; padding:10px; }
-    .kpi b { font-size:18px; display:block; }
-    .checkbox { transform:scale(1.25); }
-    .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-weight:900; font-size:12px; }
-    .pill.ok { background:#e8f5e9; }
-    .pill.mid { background:#fff8e1; }
-    .pill.no { background:#ffebee; }
-    .del { cursor:pointer; font-weight:900; padding:6px 10px; border-radius:10px; border:1px solid #d7dbe0; background:#fff; }
-    .hint { background:#fff8e1; border:1px solid #ffe0b2; padding:10px 12px; border-radius:12px; }
-    .err { background:#ffebee; border:1px solid #ffcdd2; padding:10px 12px; border-radius:12px; }
-    .ok { background:#e8f5e9; border:1px solid #c8e6c9; padding:10px 12px; border-radius:12px; }
+    .kpi > div {
+      flex:1 1 140px;
+      background:#f6fcf9;
+      border:1px solid #d6ebe0;
+      border-radius:14px;
+      padding:10px;
+    }
+    .kpi b { font-size:20px; display:block; color:#224f3c; }
+    .name-box {
+      background:#f9fdfb;
+      border:1px solid #dcede4;
+      border-radius:12px;
+      padding:10px;
+      min-height:78px;
+    }
+    .checkbox { transform:scale(1.25); accent-color:var(--victoria-green); }
+    .pill { display:inline-block; padding:4px 8px; border-radius:999px; font-weight:800; font-size:12px; }
+    .pill.ok { background:#dff4e7; color:#245c41; }
+    .pill.mid { background:#fff2cf; color:#7b6020; }
+    .pill.no { background:#fee3e3; color:#7d3030; }
+    .del {
+      cursor:pointer;
+      font-weight:800;
+      padding:6px 10px;
+      border-radius:10px;
+      border:1px solid #e7c2c2;
+      background:#fff3f3;
+      color:#8b3a3a;
+    }
+    .hint, .err, .ok { padding:10px 12px; border-radius:12px; }
+    .hint { background:#fff5d8; border:1px solid #f6d483; color:#5f4815; }
+    .err { background:#ffe8e8; border:1px solid #f5bcbc; color:#792f2f; }
+    .ok { background:#e3f8ec; border:1px solid #b6e4c9; color:#1c5f3d; }
+    @media (max-width: 680px) {
+      .brand img { height:28px; }
+      .brand-text b { font-size:13px; }
+      .price-badge { font-size:11px; padding:5px 8px; }
+      th, td { padding:10px 6px; }
+    }
   </style>
 </head>
 <body>
-<header><h1>Control de pagos — Excursión (compartido)</h1></header>
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <img src="https://victoriafp.com/images/logo/victoria-horizontal-color-rgb.svg" alt="Victoria FP" />
+      <div class="brand-text">
+        <b>Control de pagos</b>
+        <span>Excursión por clase</span>
+      </div>
+    </div>
+    <div class="price-badge">Total 25€</div>
+  </div>
+</header>
 <main>
 
-  <section class="card">
+  <section class="card card-top">
     <div class="row" style="margin-top:10px;">
       <div>
-        <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entresramas)</span><br>
+        <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas)</span><br>
         <span class="muted small">Datos compartidos en Firestore (tiempo real).</span>
       </div>
     </div>
@@ -70,12 +218,22 @@
       <div><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
       <div><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
       <div><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
-      <div><span class="muted">Pendiente</span><b id="kpiPendiente">—</b></div>
+      <div><span class="muted">Pendiente autobús</span><b id="kpiPendBus">—</b></div>
+      <div><span class="muted">Pendiente entre ramas</span><b id="kpiPendEnt">—</b></div>
     </div>
 
-    <div id="statusBox" class="hint small" style="margin-top:12px;">
-      Conectando a Firebase…
+    <div class="row" style="margin-top:12px;">
+      <div class="name-box">
+        <b id="paidTitle">Han pagado todo (0)</b>
+        <div id="paidList" class="muted small">—</div>
+      </div>
+      <div class="name-box">
+        <b id="pendingTitle">Pendientes (0)</b>
+        <div id="pendingList" class="muted small">—</div>
+      </div>
     </div>
+
+    <div id="statusBox" class="hint small" style="margin-top:12px; display:none;"></div>
   </section>
 
   <section class="card">
@@ -88,7 +246,6 @@
 
     <div class="row">
       <div><input id="search" type="text" placeholder="Buscar alumno..." /></div>
-      <div class="right"><button class="btn ghost" id="btnResetClass" type="button">Reset clase</button></div>
     </div>
 
     <div class="row" style="margin-top:10px;">
@@ -102,7 +259,7 @@
           <tr>
             <th>Alumno</th>
             <th class="right">Autobús<br><span class="muted small">11€</span></th>
-            <th class="right">Entresramas<br><span class="muted small">14€</span></th>
+            <th class="right">Entre ramas<br><span class="muted small">14€</span></th>
             <th class="right">Total</th>
             <th>Estado</th>
             <th class="right">Borrar</th>
@@ -161,12 +318,14 @@
   const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
     getDocs, query, where, limit, onSnapshot, writeBatch
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
   const db = getFirestore(app);
 
   const STUDENTS_COL = collection(db, "excursion_students");
@@ -182,6 +341,7 @@
 
   function setStatus(text, kind="hint") {
     const el = $("statusBox");
+    el.style.display = "block";
     el.className = (kind === "ok") ? "ok small" : (kind === "err" ? "err small" : "hint small");
     el.textContent = text;
   }
@@ -235,19 +395,33 @@
   }
 
   function renderKPI() {
-    const totalStudents = state.students.length;
-    let recaudado = 0, pagados = 0;
-    for (const s of state.students) {
+    const classStudents = state.students.filter(s => s.class === state.clase);
+    const totalStudents = classStudents.length;
+    let recaudado = 0, pagados = 0, pendingBus = 0, pendingEnt = 0;
+    const paidNames = [];
+    const pendingNames = [];
+    for (const s of classStudents) {
       const { paid } = calcPaid(s);
       recaudado += paid;
-      if (paid === PRICE_TOTAL) pagados++;
+      if (paid === PRICE_TOTAL) {
+        pagados++;
+        paidNames.push(s.name);
+      } else {
+        pendingNames.push(s.name);
+      }
+      if (!s.bus) pendingBus += PRICE_BUS;
+      if (!s.ent) pendingEnt += PRICE_ENT;
     }
-    const pendiente = totalStudents * PRICE_TOTAL - recaudado;
 
     $("kpiAlumnos").textContent = totalStudents;
     $("kpiPagados").textContent = pagados;
     $("kpiRecaudado").textContent = money(recaudado);
-    $("kpiPendiente").textContent = money(pendiente);
+    $("kpiPendBus").textContent = money(pendingBus);
+    $("kpiPendEnt").textContent = money(pendingEnt);
+    $("paidTitle").textContent = `Han pagado todo (${paidNames.length})`;
+    $("pendingTitle").textContent = `Pendientes (${pendingNames.length})`;
+    $("paidList").textContent = paidNames.length ? paidNames.join(", ") : "Ninguno";
+    $("pendingList").textContent = pendingNames.length ? pendingNames.join(", ") : "Ninguno";
   }
 
   function renderTable() {
@@ -355,17 +529,13 @@
     }
   };
 
-  $("btnResetClass").onclick = async () => {
-    if (!confirm("¿Resetear pagos de la clase actual? (solo desmarca)")) return;
-    try {
-      const snap = await getDocs(query(STUDENTS_COL, where("class","==", state.clase)));
-      const batch = writeBatch(db);
-      snap.forEach(d => batch.update(d.ref, { bus:false, ent:false }));
-      await batch.commit();
-    } catch {
-      alert("No se pudo resetear. Revisa conexión/reglas.");
-    }
-  };
+  try {
+    await signInAnonymously(auth);
+  } catch (e) {
+    console.error(e);
+    setStatus("No se pudo autenticar (anónimo). Revisa Authentication en Firebase.", "err");
+    throw e;
+  }
 
   // Realtime
   onSnapshot(query(STUDENTS_COL), (snap) => {
@@ -374,7 +544,6 @@
       return { id:d.id, name:v.name||"", class:v.class||"", bus:!!v.bus, ent:!!v.ent };
     });
     renderAll();
-    setStatus("Conectado. Cambios en tiempo real.", "ok");
   }, (err) => {
     console.error(err);
     setStatus("Error conectando a Firebase. Revisa reglas (test mode) y recarga.", "err");
