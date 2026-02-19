@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Pagos excursión</title>
+  <title>Pagos excursión (Firebase)</title>
   <style>
     :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; }
     body { margin:0; background:#f6f7f9; color:#111; }
@@ -51,28 +51,18 @@
     .del { cursor:pointer; font-weight:900; padding:6px 10px; border-radius:10px; border:1px solid #d7dbe0; background:#fff; }
     .hint { background:#fff8e1; border:1px solid #ffe0b2; padding:10px 12px; border-radius:12px; }
     .err { background:#ffebee; border:1px solid #ffcdd2; padding:10px 12px; border-radius:12px; }
+    .ok { background:#e8f5e9; border:1px solid #c8e6c9; padding:10px 12px; border-radius:12px; }
   </style>
 </head>
 <body>
-<header><h1>Control de pagos — Excursión</h1></header>
+<header><h1>Control de pagos — Excursión (compartido)</h1></header>
 <main>
 
-  <noscript>
-    <div class="card err">
-      <b>JavaScript está desactivado o bloqueado.</b><br>
-      En iPhone, si lo abres en la “vista previa” de Archivos/WhatsApp/Mail, a veces bloquea el script y por eso no salen pestañas ni alumnos.<br>
-      Ábrelo en <b>Safari</b> (Compartir → “Abrir en Safari”).
-    </div>
-  </noscript>
-
   <section class="card">
-    <div class="row">
+    <div class="row" style="margin-top:10px;">
       <div>
         <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entresramas)</span><br>
-        <span class="muted small">Se guarda en el móvil automáticamente.</span>
-      </div>
-      <div class="right">
-        <button class="btn ghost" id="btnResetAll" type="button">Reset todo</button>
+        <span class="muted small">Datos compartidos en Firestore (tiempo real).</span>
       </div>
     </div>
 
@@ -82,32 +72,19 @@
       <div><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
       <div><span class="muted">Pendiente</span><b id="kpiPendiente">—</b></div>
     </div>
+
+    <div id="statusBox" class="hint small" style="margin-top:12px;">
+      Conectando a Firebase…
+    </div>
   </section>
 
   <section class="card">
-    <div class="hint small">
-      <b>Pestañas:</b> si no caben, desliza a izquierda/derecha.  
-      Si aún así no aparecen, usa el desplegable “Clase/Módulo”.
-    </div>
-
-    <div style="margin-top:10px;">
+    <div style="margin-bottom:10px;">
       <label class="small muted">Clase / Módulo</label>
-      <select id="classSelect">
-        <option value="1º DAM">1º DAM</option>
-<option value="2º DAM">2º DAM</option>
-<option value="1º ASIR">1º ASIR</option>
-<option value="1º Marketing">1º Marketing</option>
-<option value="2º Marketing">2º Marketing</option>
-      </select>
+      <select id="classSelect"></select>
     </div>
 
-    <div class="tabs" id="tabs" aria-label="Pestañas de clases">
-      <button type="button" class="tab active" data-clase="1º DAM">1º DAM</button>
-<button type="button" class="tab" data-clase="2º DAM">2º DAM</button>
-<button type="button" class="tab" data-clase="1º ASIR">1º ASIR</button>
-<button type="button" class="tab" data-clase="1º Marketing">1º Marketing</button>
-<button type="button" class="tab" data-clase="2º Marketing">2º Marketing</button>
-    </div>
+    <div class="tabs" id="tabs"></div>
 
     <div class="row">
       <div><input id="search" type="text" placeholder="Buscar alumno..." /></div>
@@ -115,7 +92,7 @@
     </div>
 
     <div class="row" style="margin-top:10px;">
-      <div><input id="newName" type="text" placeholder="Añadir alumno a esta pestaña (opcional)..." /></div>
+      <div><input id="newName" type="text" placeholder="Añadir alumno a esta clase (opcional)..." /></div>
       <div class="right"><button class="btn primary" id="btnAdd" type="button">Añadir</button></div>
     </div>
 
@@ -132,90 +109,85 @@
           </tr>
         </thead>
         <tbody id="tbody">
-          <tr><td colspan="6" class="muted">Cargando alumnos…</td></tr>
+          <tr><td colspan="6" class="muted">Cargando…</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
-  <section class="card">
-    <h2 style="margin:0 0 8px 0; font-size:16px;">Copia de seguridad (TXT)</h2>
-    <p class="muted small" style="margin-top:0;">Exporta un TXT para guardarlo y luego podrás importarlo.</p>
-    <div class="row">
-      <div><button class="btn primary" id="btnExport" type="button">Exportar TXT</button></div>
-      <div>
-        <label class="btn ghost" style="display:inline-block;text-align:center;">
-          Importar TXT
-          <input id="fileImport" type="file" accept=".txt" style="display:none;" />
-        </label>
-      </div>
-      <div class="right"><button class="btn danger" id="btnWipe" type="button">Borrar todo</button></div>
-    </div>
-  </section>
+<script type="module">
+  const firebaseConfig = {
+  "apiKey": "AIzaSyC2CYk-6D5IplkV48O-kme-eKDDG8oloAA",
+  "authDomain": "convivencia-victoria.firebaseapp.com",
+  "projectId": "convivencia-victoria",
+  "storageBucket": "convivencia-victoria.firebasestorage.app",
+  "messagingSenderId": "459565339869",
+  "appId": "1:459565339869:web:988e7c6b8fe2db7f593734"
+};
 
-<script>
-(() => {
-  const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
-
-  const ALUMNOS_INICIALES = {
-    "1º DAM": ["Mario Hernández Ramos", "Sergio Jiménez Del Ojo", "Oscar Labarta González", "David Lázaro Vargas", "Carlos Mejías Campuzano", "Vicente Muñoz Polanco Quirós", "Guillermo Navascués Martínez", "Nuria Palacios Molinares", "María Pérez Jordán", "Hugo Ramírez Rodríguez", "Juan Yeray Vargas Gómez", "Juan Carlos Zamora Rodríguez", "Marcos Cabrera Pérez", "Gonzalo Castellano Ruiz", "Julia Delgado Iglesias", "Alejandro Domínguez Mora", "Alejandro Florido Caro", "Miguel Gómez Fernández", "Jaime González Ruiz", "Alejandro Guerrero Domínguez", "Román Gutiérrez Jurado"],
-    "2º DAM": [],
-    "1º ASIR": [],
-    "1º Marketing": [],
-    "2º Marketing": []
+  const INITIAL = {
+    classes: ["1º DAM","2º DAM","1º ASIR","1º Marketing","2º Marketing"],
+    studentsByClass: {
+      "1º DAM": [
+  "Mario Hernández Ramos",
+  "Sergio Jiménez Del Ojo",
+  "Oscar Labarta González",
+  "David Lázaro Vargas",
+  "Carlos Mejías Campuzano",
+  "Vicente Muñoz Polanco Quirós",
+  "Guillermo Navascués Martínez",
+  "Nuria Palacios Molinares",
+  "María Pérez Jordán",
+  "Hugo Ramírez Rodríguez",
+  "Juan Yeray Vargas Gómez",
+  "Juan Carlos Zamora Rodríguez",
+  "Marcos Cabrera Pérez",
+  "Gonzalo Castellano Ruiz",
+  "Julia Delgado Iglesias",
+  "Alejandro Domínguez Mora",
+  "Alejandro Florido Caro",
+  "Miguel Gómez Fernández",
+  "Jaime González Ruiz",
+  "Alejandro Guerrero Domínguez",
+  "Román Gutiérrez Jurado"
+],
+      "2º DAM": [],
+      "1º ASIR": [],
+      "1º Marketing": [],
+      "2º Marketing": []
+    }
   };
 
-  // Clave nueva para evitar datos viejos en el móvil
-  const KEY_DATA = "excursion_pagos_v5";
+  const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+  import {
+    getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+    getDocs, query, where, limit, onSnapshot, writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const STUDENTS_COL = collection(db, "excursion_students");
 
   const $ = (id) => document.getElementById(id);
   const money = (n) => `${n}€`;
 
-  function defaultData() {
-    const data = {};
-    for (const clase of Object.keys(ALUMNOS_INICIALES)) {
-      data[clase] = ALUMNOS_INICIALES[clase].map(n => ({ nombre:n, bus:false, ent:false }));
-    }
-    return data;
-  }
-
-  function mergeInitial(data) {
-    for (const clase of Object.keys(ALUMNOS_INICIALES)) {
-      if (!data[clase]) data[clase] = [];
-      const existing = new Set(data[clase].map(a => (a.nombre || "").toLowerCase()));
-      for (const n of ALUMNOS_INICIALES[clase]) {
-        if (!existing.has(n.toLowerCase())) data[clase].push({ nombre:n, bus:false, ent:false });
-      }
-    }
-    return data;
-  }
-
-  function loadData() {
-    const raw = localStorage.getItem(KEY_DATA);
-    if (!raw) {
-      const init = defaultData();
-      localStorage.setItem(KEY_DATA, JSON.stringify(init));
-      return init;
-    }
-    try {
-      return mergeInitial(JSON.parse(raw));
-    } catch {
-      const init = defaultData();
-      localStorage.setItem(KEY_DATA, JSON.stringify(init));
-      return init;
-    }
-  }
-
-  function saveData(data) { localStorage.setItem(KEY_DATA, JSON.stringify(data)); }
-
   let state = {
-    data: loadData(),
     clase: "1º DAM",
-    search: ""
+    search: "",
+    students: []
   };
 
-  function calcAlumno(a) {
-    const paid = (a.bus ? PRICE_BUS : 0) + (a.ent ? PRICE_ENT : 0);
+  function setStatus(text, kind="hint") {
+    const el = $("statusBox");
+    el.className = (kind === "ok") ? "ok small" : (kind === "err" ? "err small" : "hint small");
+    el.textContent = text;
+  }
+
+  function calcPaid(s) {
+    const paid = (s.bus ? PRICE_BUS : 0) + (s.ent ? PRICE_ENT : 0);
     let status="Pendiente", cls="no";
     if (paid === 0) { status="Pendiente"; cls="no"; }
     else if (paid === PRICE_TOTAL) { status="Pagado"; cls="ok"; }
@@ -223,66 +195,96 @@
     return { paid, status, cls };
   }
 
-  function renderSelect() {
-    const sel = $("classSelect");
-    if (!sel) return;
-    // si por lo que sea está vacío, lo repoblamos
-    if (sel.options.length === 0) {
-      for (const clase of Object.keys(state.data)) {
-        const opt = document.createElement("option");
-        opt.value = clase; opt.textContent = clase;
-        sel.appendChild(opt);
+  async function ensureSeeded() {
+    const snap = await getDocs(query(STUDENTS_COL, limit(1)));
+    if (!snap.empty) return;
+
+    setStatus("Inicializando alumnos (primera vez)…", "hint");
+
+    const batch = writeBatch(db);
+    for (const cls of INITIAL.classes) {
+      for (const name of (INITIAL.studentsByClass[cls] || [])) {
+        const ref = doc(STUDENTS_COL);
+        batch.set(ref, { name, class: cls, bus:false, ent:false, createdAt: Date.now() });
       }
+    }
+    await batch.commit();
+  }
+
+  function renderTabsAndSelect() {
+    const sel = $("classSelect");
+    sel.innerHTML = "";
+    for (const cls of INITIAL.classes) {
+      const opt = document.createElement("option");
+      opt.value = cls; opt.textContent = cls;
+      sel.appendChild(opt);
     }
     sel.value = state.clase;
     sel.onchange = () => { state.clase = sel.value; renderAll(); };
+
+    const tabs = $("tabs");
+    tabs.innerHTML = "";
+    for (const cls of INITIAL.classes) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "tab" + (cls === state.clase ? " active" : "");
+      btn.textContent = cls;
+      btn.onclick = () => { state.clase = cls; sel.value = cls; renderAll(); };
+      tabs.appendChild(btn);
+    }
   }
 
-  function renderTabs() {
-    const tabs = $("tabs");
-    if (!tabs) return;
-    tabs.querySelectorAll(".tab").forEach(btn => {
-      const clase = btn.getAttribute("data-clase") || btn.textContent.trim();
-      btn.classList.toggle("active", clase === state.clase);
-      btn.onclick = () => {
-        state.clase = clase;
-        $("classSelect").value = clase;
-        renderAll();
-      };
-    });
+  function renderKPI() {
+    const totalStudents = state.students.length;
+    let recaudado = 0, pagados = 0;
+    for (const s of state.students) {
+      const { paid } = calcPaid(s);
+      recaudado += paid;
+      if (paid === PRICE_TOTAL) pagados++;
+    }
+    const pendiente = totalStudents * PRICE_TOTAL - recaudado;
+
+    $("kpiAlumnos").textContent = totalStudents;
+    $("kpiPagados").textContent = pagados;
+    $("kpiRecaudado").textContent = money(recaudado);
+    $("kpiPendiente").textContent = money(pendiente);
   }
 
   function renderTable() {
     const tbody = $("tbody");
     tbody.innerHTML = "";
 
-    const list = state.data[state.clase] || [];
     const term = (state.search || "").trim().toLowerCase();
+    const list = state.students
+      .filter(s => s.class === state.clase)
+      .filter(s => !term || (s.name || "").toLowerCase().includes(term))
+      .sort((a,b) => (a.name||"").localeCompare(b.name||"", "es"));
 
-    const filtered = list.filter(a => !term || (a.nombre||"").toLowerCase().includes(term));
-    if (filtered.length === 0) {
+    if (list.length === 0) {
       const tr = document.createElement("tr");
       tr.innerHTML = '<td colspan="6" class="muted">No hay alumnos (o no coincide la búsqueda).</td>';
       tbody.appendChild(tr);
       return;
     }
 
-    filtered.forEach(a => {
-      const idx = state.data[state.clase].indexOf(a);
-      const { paid, status, cls } = calcAlumno(a);
+    for (const s of list) {
+      const { paid, status, cls } = calcPaid(s);
 
       const tr = document.createElement("tr");
 
       const tdName = document.createElement("td");
-      tdName.textContent = a.nombre;
+      tdName.textContent = s.name;
 
       const tdBus = document.createElement("td");
       tdBus.className = "right";
       const cbBus = document.createElement("input");
       cbBus.type = "checkbox";
       cbBus.className = "checkbox";
-      cbBus.checked = !!a.bus;
-      cbBus.onchange = () => { a.bus = cbBus.checked; saveData(state.data); renderAll(); };
+      cbBus.checked = !!s.bus;
+      cbBus.onchange = async () => {
+        try { await updateDoc(doc(STUDENTS_COL, s.id), { bus: cbBus.checked }); }
+        catch { alert("No se pudo guardar. Revisa conexión/reglas."); cbBus.checked = !cbBus.checked; }
+      };
       tdBus.appendChild(cbBus);
 
       const tdEnt = document.createElement("td");
@@ -290,8 +292,11 @@
       const cbEnt = document.createElement("input");
       cbEnt.type = "checkbox";
       cbEnt.className = "checkbox";
-      cbEnt.checked = !!a.ent;
-      cbEnt.onchange = () => { a.ent = cbEnt.checked; saveData(state.data); renderAll(); };
+      cbEnt.checked = !!s.ent;
+      cbEnt.onchange = async () => {
+        try { await updateDoc(doc(STUDENTS_COL, s.id), { ent: cbEnt.checked }); }
+        catch { alert("No se pudo guardar. Revisa conexión/reglas."); cbEnt.checked = !cbEnt.checked; }
+      };
       tdEnt.appendChild(cbEnt);
 
       const tdTotal = document.createElement("td");
@@ -310,11 +315,10 @@
       delBtn.className = "del";
       delBtn.type = "button";
       delBtn.textContent = "✕";
-      delBtn.onclick = () => {
-        if (!confirm(`¿Borrar a "${a.nombre}" de ${state.clase}?`)) return;
-        state.data[state.clase].splice(idx, 1);
-        saveData(state.data);
-        renderAll();
+      delBtn.onclick = async () => {
+        if (!confirm(`¿Borrar a "${s.name}" de ${s.class}?`)) return;
+        try { await deleteDoc(doc(STUDENTS_COL, s.id)); }
+        catch { alert("No se pudo borrar. Revisa conexión/reglas."); }
       };
       tdDel.appendChild(delBtn);
 
@@ -326,29 +330,11 @@
       tr.appendChild(tdDel);
 
       tbody.appendChild(tr);
-    });
-  }
-
-  function renderKPI() {
-    let alumnos=0, pagados=0, recaudado=0;
-    for (const clase of Object.keys(state.data)) {
-      for (const a of state.data[clase]) {
-        alumnos++;
-        const { paid } = calcAlumno(a);
-        recaudado += paid;
-        if (paid === PRICE_TOTAL) pagados++;
-      }
     }
-    const pendiente = alumnos * PRICE_TOTAL - recaudado;
-    $("kpiAlumnos").textContent = alumnos;
-    $("kpiPagados").textContent = pagados;
-    $("kpiRecaudado").textContent = money(recaudado);
-    $("kpiPendiente").textContent = money(pendiente);
   }
 
   function renderAll() {
-    renderSelect();
-    renderTabs();
+    renderTabsAndSelect();
     renderTable();
     renderKPI();
   }
@@ -358,73 +344,49 @@
     renderTable();
   });
 
-  $("btnResetClass").onclick = () => {
-    if (!confirm("¿Resetear pagos de la clase actual? (solo desmarca)")) return;
-    (state.data[state.clase] || []).forEach(a => { a.bus=false; a.ent=false; });
-    saveData(state.data);
-    renderAll();
-  };
-
-  $("btnResetAll").onclick = () => {
-    if (!confirm("¿Resetear pagos de todas las pestañas? (solo desmarca)")) return;
-    for (const clase of Object.keys(state.data)) state.data[clase].forEach(a => { a.bus=false; a.ent=false; });
-    saveData(state.data);
-    renderAll();
-  };
-
-  $("btnAdd").onclick = () => {
+  $("btnAdd").onclick = async () => {
     const name = $("newName").value.trim();
     if (!name) return;
-    const exists = new Set((state.data[state.clase] || []).map(a => (a.nombre||"").toLowerCase()));
-    if (exists.has(name.toLowerCase())) return alert("Ese alumno ya existe en esta pestaña.");
-    state.data[state.clase].push({ nombre:name, bus:false, ent:false });
-    $("newName").value = "";
-    saveData(state.data);
-    renderAll();
-  };
-
-  $("btnExport").onclick = () => {
-    const payload = { version:5, exportedAt:new Date().toISOString(), data: state.data };
-    const txt = JSON.stringify(payload, null, 2);
-    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "pagos_excursion_backup.txt";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(a.href);
-  };
-
-  $("fileImport").addEventListener("change", async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
     try {
-      const parsed = JSON.parse(text);
-      if (!parsed?.data) throw new Error("Formato inválido");
-      state.data = mergeInitial(parsed.data);
-      saveData(state.data);
-      renderAll();
-      alert("Importación correcta.");
+      await addDoc(STUDENTS_COL, { name, class: state.clase, bus:false, ent:false, createdAt: Date.now() });
+      $("newName").value = "";
     } catch {
-      alert("No se ha podido importar. Selecciona un TXT exportado desde esta web.");
-    } finally {
-      e.target.value = "";
+      alert("No se pudo añadir. Revisa conexión/reglas.");
     }
+  };
+
+  $("btnResetClass").onclick = async () => {
+    if (!confirm("¿Resetear pagos de la clase actual? (solo desmarca)")) return;
+    try {
+      const snap = await getDocs(query(STUDENTS_COL, where("class","==", state.clase)));
+      const batch = writeBatch(db);
+      snap.forEach(d => batch.update(d.ref, { bus:false, ent:false }));
+      await batch.commit();
+    } catch {
+      alert("No se pudo resetear. Revisa conexión/reglas.");
+    }
+  };
+
+  // Realtime
+  onSnapshot(query(STUDENTS_COL), (snap) => {
+    state.students = snap.docs.map(d => {
+      const v = d.data();
+      return { id:d.id, name:v.name||"", class:v.class||"", bus:!!v.bus, ent:!!v.ent };
+    });
+    renderAll();
+    setStatus("Conectado. Cambios en tiempo real.", "ok");
+  }, (err) => {
+    console.error(err);
+    setStatus("Error conectando a Firebase. Revisa reglas (test mode) y recarga.", "err");
   });
 
-  $("btnWipe").onclick = () => {
-    if (!confirm("¿Borrar TODO? Se perderán los datos guardados en este móvil.")) return;
-    localStorage.removeItem(KEY_DATA);
-    state.data = loadData();
-    saveData(state.data);
-    renderAll();
-  };
+  // Seed
+  try { await ensureSeeded(); }
+  catch (e) { console.error(e); setStatus("No se pudo inicializar. Revisa reglas y recarga.", "err"); }
 
   renderAll();
-})();
 </script>
+
 </main>
 </body>
 </html>
