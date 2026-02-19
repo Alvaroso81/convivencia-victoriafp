@@ -230,10 +230,10 @@
     <div class="auth-box">
       <div id="authMode" class="hint small" style="display:none;"></div>
       <div class="row" style="margin-top:8px;">
-        <div><input id="editorEmail" type="email" placeholder="Email editor" /></div>
-        <div><input id="editorPass" type="password" placeholder="Clave editor" /></div>
-        <div class="right"><button class="btn ghost" id="btnLoginEditor" type="button">Entrar editor</button></div>
-        <div class="right"><button class="btn ghost" id="btnLogoutEditor" type="button" style="display:none;">Salir editor</button></div>
+        <div><input id="editorEmail" type="email" placeholder="Email" /></div>
+        <div><input id="editorPass" type="password" placeholder="Clave" /></div>
+        <div class="right"><button class="btn ghost" id="btnLoginEditor" type="button">Entrar</button></div>
+        <div class="right"><button class="btn ghost" id="btnLogoutEditor" type="button" style="display:none;">Salir</button></div>
       </div>
     </div>
 
@@ -354,9 +354,11 @@
     clase: "1º DAM",
     search: "",
     students: [],
+    isLoggedIn: false,
     isEditor: false,
     userEmail: ""
   };
+  let unsubscribeStudents = null;
 
   function setStatus(text, kind="hint") {
     const el = $("statusBox");
@@ -414,6 +416,27 @@
   }
 
   function renderKPI() {
+    if (!state.isLoggedIn) {
+      $("gKpiAlumnos").textContent = "—";
+      $("gKpiPagados").textContent = "—";
+      $("gKpiRecaudado").textContent = "—";
+      $("gKpiPendBus").textContent = "—";
+      $("gKpiPendEnt").textContent = "—";
+      $("gPendingSummary").textContent = "Inicia sesion para ver datos.";
+      $("gPaidSummary").textContent = "Inicia sesion para ver datos.";
+      $("gPaidProgressFill").style.width = "0%";
+
+      $("kpiAlumnos").textContent = "—";
+      $("kpiPagados").textContent = "—";
+      $("kpiRecaudado").textContent = "—";
+      $("kpiPendBus").textContent = "—";
+      $("kpiPendEnt").textContent = "—";
+      $("pendingSummary").textContent = "Inicia sesion para ver datos.";
+      $("paidSummary").textContent = "Inicia sesion para ver datos.";
+      $("paidProgressFill").style.width = "0%";
+      return;
+    }
+
     const global = calcMetrics(state.students);
     const classStudents = state.students.filter(s => s.class === state.clase);
     const byClass = calcMetrics(classStudents);
@@ -439,19 +462,23 @@
 
   function renderEditorUI() {
     const canEdit = state.isEditor;
+    const canView = state.isLoggedIn;
     $("newName").disabled = !canEdit;
     $("btnAdd").disabled = !canEdit;
+    $("search").disabled = !canView;
 
-    $("editorEmail").disabled = canEdit;
-    $("editorPass").disabled = canEdit;
-    $("btnLoginEditor").style.display = canEdit ? "none" : "inline-block";
-    $("btnLogoutEditor").style.display = canEdit ? "inline-block" : "none";
+    $("editorEmail").disabled = canView;
+    $("editorPass").disabled = canView;
+    $("btnLoginEditor").style.display = canView ? "none" : "inline-block";
+    $("btnLogoutEditor").style.display = canView ? "inline-block" : "none";
 
     const authMode = $("authMode");
-    if (canEdit) {
+    if (canView) {
       authMode.style.display = "block";
-      authMode.className = "ok small";
-      authMode.textContent = `Modo editor activo: ${state.userEmail}`;
+      authMode.className = canEdit ? "ok small" : "hint small";
+      authMode.textContent = canEdit
+        ? `Modo editor activo: ${state.userEmail}`
+        : `Modo visor activo: ${state.userEmail}`;
     } else {
       authMode.style.display = "none";
     }
@@ -460,6 +487,12 @@
   function renderTable() {
     const tbody = $("tbody");
     tbody.innerHTML = "";
+    if (!state.isLoggedIn) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = '<td colspan="6" class="muted">Inicia sesion para ver los datos.</td>';
+      tbody.appendChild(tr);
+      return;
+    }
 
     const term = (state.search || "").trim().toLowerCase();
     const list = state.students
@@ -583,7 +616,7 @@
       $("editorPass").value = "";
     } catch (e) {
       console.error(e);
-      alert("No se pudo iniciar sesion como editor.");
+      alert("No se pudo iniciar sesion.");
     }
   };
 
@@ -600,27 +633,30 @@
     const email = (user?.email || "").toLowerCase();
     const uid = user?.uid || "";
     state.userEmail = email;
+    state.isLoggedIn = !!user;
     state.isEditor = !!user && ALLOWED_EDITOR_UIDS.has(uid);
 
-    if (user && !state.isEditor) {
-      await signOut(auth);
-      state.userEmail = "";
-      state.isEditor = false;
+    if (unsubscribeStudents) {
+      unsubscribeStudents();
+      unsubscribeStudents = null;
+    }
+
+    if (state.isLoggedIn) {
+      unsubscribeStudents = onSnapshot(query(STUDENTS_COL), (snap) => {
+        state.students = snap.docs.map(d => {
+          const v = d.data();
+          return { id:d.id, name:v.name||"", class:v.class||"", bus:!!v.bus, ent:!!v.ent };
+        });
+        renderAll();
+      }, (err) => {
+        console.error(err);
+        setStatus("Error conectando a Firebase. Revisa reglas y recarga.", "err");
+      });
+    } else {
+      state.students = [];
     }
 
     renderAll();
-  });
-
-  // Realtime
-  onSnapshot(query(STUDENTS_COL), (snap) => {
-    state.students = snap.docs.map(d => {
-      const v = d.data();
-      return { id:d.id, name:v.name||"", class:v.class||"", bus:!!v.bus, ent:!!v.ent };
-    });
-    renderAll();
-  }, (err) => {
-    console.error(err);
-    setStatus("Error conectando a Firebase. Revisa reglas (test mode) y recarga.", "err");
   });
 
   renderAll();
