@@ -191,6 +191,14 @@
     .err { background:#ffe8e8; border:1px solid #f5bcbc; color:#792f2f; }
     .ok { background:#e3f8ec; border:1px solid #b6e4c9; color:#1c5f3d; }
     .auth-box { margin-top:10px; }
+    .summary-title {
+      margin:12px 0 6px 0;
+      font-size:13px;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      color:#1f5b3f;
+      font-weight:800;
+    }
     .btn[disabled], input[disabled] { opacity:.55; cursor:not-allowed; }
     @media (max-width: 680px) {
       .header-title { font-size:16px; }
@@ -224,6 +232,26 @@
       </div>
     </div>
 
+    <div class="summary-title">Resumen global (todas las clases)</div>
+    <div class="kpi">
+      <div><span class="muted">Alumnos</span><b id="gKpiAlumnos">—</b></div>
+      <div><span class="muted">Pagados (25€)</span><b id="gKpiPagados">—</b></div>
+      <div><span class="muted">Recaudado</span><b id="gKpiRecaudado">—</b></div>
+      <div><span class="muted">Pendiente autobús</span><b id="gKpiPendBus">—</b></div>
+      <div><span class="muted">Pendiente entre ramas</span><b id="gKpiPendEnt">—</b></div>
+    </div>
+
+    <div class="row" style="margin-top:12px;">
+      <div class="progress-card">
+        <b id="gPendingSummary">Pendientes: 0 de 0 (0%)</b>
+        <div id="gPaidSummary" class="muted small">Pagado completo: 0 de 0 (0%)</div>
+        <div class="progress-bar">
+          <div id="gPaidProgressFill" class="progress-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-title">Resumen por clase (seleccionada)</div>
     <div class="kpi">
       <div><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
       <div><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
@@ -435,7 +463,6 @@
     }
     if (!added) return;
     await batch.commit();
-    setStatus(`Sincronizados ${added} alumnos nuevos en Firestore.`, "ok");
   }
 
   function renderTabsAndSelect() {
@@ -461,11 +488,10 @@
     }
   }
 
-  function renderKPI() {
-    const classStudents = state.students.filter(s => s.class === state.clase);
-    const totalStudents = classStudents.length;
+  function calcMetrics(students) {
+    const totalStudents = students.length;
     let recaudado = 0, pagados = 0, pendingBus = 0, pendingEnt = 0;
-    for (const s of classStudents) {
+    for (const s of students) {
       const { paid } = calcPaid(s);
       recaudado += paid;
       if (paid === PRICE_TOTAL) pagados++;
@@ -475,15 +501,31 @@
     const pendingCount = totalStudents - pagados;
     const paidPct = totalStudents ? Math.round((pagados / totalStudents) * 100) : 0;
     const pendingPct = totalStudents ? Math.round((pendingCount / totalStudents) * 100) : 0;
+    return { totalStudents, recaudado, pagados, pendingBus, pendingEnt, pendingCount, paidPct, pendingPct };
+  }
 
-    $("kpiAlumnos").textContent = totalStudents;
-    $("kpiPagados").textContent = pagados;
-    $("kpiRecaudado").textContent = money(recaudado);
-    $("kpiPendBus").textContent = money(pendingBus);
-    $("kpiPendEnt").textContent = money(pendingEnt);
-    $("pendingSummary").textContent = `Pendientes: ${pendingCount} de ${totalStudents} (${pendingPct}%)`;
-    $("paidSummary").textContent = `Pagado completo: ${pagados} de ${totalStudents} (${paidPct}%)`;
-    $("paidProgressFill").style.width = `${paidPct}%`;
+  function renderKPI() {
+    const global = calcMetrics(state.students);
+    const classStudents = state.students.filter(s => s.class === state.clase);
+    const byClass = calcMetrics(classStudents);
+
+    $("gKpiAlumnos").textContent = global.totalStudents;
+    $("gKpiPagados").textContent = global.pagados;
+    $("gKpiRecaudado").textContent = money(global.recaudado);
+    $("gKpiPendBus").textContent = money(global.pendingBus);
+    $("gKpiPendEnt").textContent = money(global.pendingEnt);
+    $("gPendingSummary").textContent = `Pendientes: ${global.pendingCount} de ${global.totalStudents} (${global.pendingPct}%)`;
+    $("gPaidSummary").textContent = `Pagado completo: ${global.pagados} de ${global.totalStudents} (${global.paidPct}%)`;
+    $("gPaidProgressFill").style.width = `${global.paidPct}%`;
+
+    $("kpiAlumnos").textContent = byClass.totalStudents;
+    $("kpiPagados").textContent = byClass.pagados;
+    $("kpiRecaudado").textContent = money(byClass.recaudado);
+    $("kpiPendBus").textContent = money(byClass.pendingBus);
+    $("kpiPendEnt").textContent = money(byClass.pendingEnt);
+    $("pendingSummary").textContent = `Pendientes: ${byClass.pendingCount} de ${byClass.totalStudents} (${byClass.pendingPct}%)`;
+    $("paidSummary").textContent = `Pagado completo: ${byClass.pagados} de ${byClass.totalStudents} (${byClass.paidPct}%)`;
+    $("paidProgressFill").style.width = `${byClass.paidPct}%`;
   }
 
   function renderEditorUI() {
