@@ -42,9 +42,14 @@
       max-width:980px;
       margin:0 auto;
       display:flex;
+      flex-direction:column;
       align-items:center;
       justify-content:center;
-      gap:10px;
+      gap:6px;
+    }
+    .header-logo {
+      height:52px;
+      width:auto;
     }
     .header-title {
       margin:0;
@@ -196,6 +201,7 @@
 <body>
 <header>
   <div class="header-inner">
+    <img class="header-logo" src="logo.svg" alt="Logo Victoria FP" />
     <h1 class="header-title">Convivencia Victoria FP 4 marzo 2024</h1>
   </div>
 </header>
@@ -209,7 +215,7 @@
     </div>
 
     <div class="auth-box">
-      <div id="authMode" class="hint small">Modo visualizacion: solo lectura</div>
+      <div id="authMode" class="hint small" style="display:none;"></div>
       <div class="row" style="margin-top:8px;">
         <div><input id="editorEmail" type="email" placeholder="Email editor" /></div>
         <div><input id="editorPass" type="password" placeholder="Clave editor" /></div>
@@ -441,11 +447,11 @@
 
     const authMode = $("authMode");
     if (canEdit) {
+      authMode.style.display = "block";
       authMode.className = "ok small";
       authMode.textContent = `Modo editor activo: ${state.userEmail}`;
     } else {
-      authMode.className = "hint small";
-      authMode.textContent = "Modo visualizacion: solo lectura";
+      authMode.style.display = "none";
     }
   }
 
@@ -598,7 +604,6 @@
       await signOut(auth);
       state.userEmail = "";
       state.isEditor = false;
-      setStatus("Tu cuenta no tiene permisos de edicion.", "err");
     }
 
     try { await ensureSeeded(); }
