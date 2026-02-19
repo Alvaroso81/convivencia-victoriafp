@@ -325,88 +325,7 @@
 };
 
   const INITIAL = {
-    classes: ["1º DAM","2º DAM","1º ASIR","1º Marketing","2º Marketing","PROFESORES"],
-    studentsByClass: {
-      "1º DAM": [
-  "Mario Hernández Ramos",
-  "Sergio Jiménez Del Ojo",
-  "Oscar Labarta González",
-  "David Lázaro Vargas",
-  "Carlos Mejías Campuzano",
-  "Vicente Muñoz Polanco Quirós",
-  "Guillermo Navascués Martínez",
-  "Nuria Palacios Molinares",
-  "María Pérez Jordán",
-  "Hugo Ramírez Rodríguez",
-  "Juan Yeray Vargas Gómez",
-  "Juan Carlos Zamora Rodríguez",
-  "Marcos Cabrera Pérez",
-  "Gonzalo Castellano Ruiz",
-  "Julia Delgado Iglesias",
-  "Alejandro Domínguez Mora",
-  "Alejandro Florido Caro",
-  "Miguel Gómez Fernández",
-  "Jaime González Ruiz",
-  "Alejandro Guerrero Domínguez",
-  "Román Gutiérrez Jurado"
-],
-      "2º DAM": [
-  "Luis Blanco Montoro",
-  "Rafael Blanco Valdés",
-  "Rubén Carribero García",
-  "Jesús Cervantes Fernández",
-  "Jesús Damián Cintas Muñoz",
-  "Antonio Jesús Domínguez López",
-  "Ismael Flores Vargas",
-  "José Luis Gómez Quevedo",
-  "Antonio González Cruces",
-  "Jaime González Montalbán",
-  "Eloy López Ruiz",
-  "Claudia Mellado Sánchez",
-  "José Manuel Ortega Soto",
-  "Gonzalo Polo Cocerría",
-  "Antonio Nicolás Prast Becerra",
-  "Joaquín Rivera Tirado",
-  "David Rodríguez González",
-  "David Sánchez Acosta",
-  "Koldo Uruburu Elizalde",
-  "Francisco Valencia Márquez",
-  "Alejandro Vallín Bejarano",
-  "Rubén Vega Ramírez",
-  "Félix Venegas Roldán",
-  "Francisco de Nazaret Virlan Rodríguez"
-],
-      "1º ASIR": [
-  "Alejandro Benítez Carballo",
-  "Rubén Salguero Domínguez",
-  "Miguel Ángel Ramírez López",
-  "Airon Navarro Delgado",
-  "Alejandro López Ramírez"
-],
-      "1º Marketing": [
-  "José Manuel Pérez Alfonseca",
-  "José Antonio Palma Orihuela",
-  "Jonathan Otero Vidal",
-  "Jorge Sáenz Silva",
-  "Carla Antón Morales"
-],
-      "2º Marketing": [
-  "Marta Franco",
-  "Candela Ibáñez",
-  "Cristhian Rodríguez",
-  "Carmen Galán",
-  "Rodrigo Aguilar"
-],
-      "PROFESORES": [
-  "Alvaro Osorio",
-  "David Soto",
-  "Alonso Guillen",
-  "Guido Sansalone",
-  "Tatiana Moreno",
-  "Carmen Garcia",
-  "Victoria Rodriguez"
-]
-    }
+    classes: ["1º DAM","2º DAM","1º ASIR","1º Marketing","2º Marketing","PROFESORES"]
   };
 
   const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
@@ -415,7 +334,7 @@
   import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
   import {
     getFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-    getDocs, query, onSnapshot, writeBatch
+    query, onSnapshot
   } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
   const app = initializeApp(firebaseConfig);
@@ -453,22 +372,6 @@
     else if (paid === PRICE_TOTAL) { status="Pagado"; cls="ok"; }
     else { status="Parcial"; cls="mid"; }
     return { paid, status, cls };
-  }
-
-  async function ensureRosterSynced() {
-    if (!state.isEditor) return;
-    const snap = await getDocs(STUDENTS_COL);
-    // Seed only once when the collection is empty.
-    // If a student is intentionally deleted, do not recreate it later.
-    if (!snap.empty) return;
-    const batch = writeBatch(db);
-    for (const cls of INITIAL.classes) {
-      for (const name of (INITIAL.studentsByClass[cls] || [])) {
-        const ref = doc(STUDENTS_COL);
-        batch.set(ref, { name, class: cls, bus:false, ent:false, createdAt: Date.now() });
-      }
-    }
-    await batch.commit();
   }
 
   function renderTabsAndSelect() {
@@ -704,9 +607,6 @@
       state.userEmail = "";
       state.isEditor = false;
     }
-
-    try { await ensureRosterSynced(); }
-    catch (e) { console.error(e); setStatus("No se pudo inicializar. Revisa reglas y recarga.", "err"); }
 
     renderAll();
   });
