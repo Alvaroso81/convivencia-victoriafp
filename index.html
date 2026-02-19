@@ -388,7 +388,7 @@
   "José Antonio Palma Orihuela",
   "Jonathan Otero Vidal",
   "Jorge Sáenz Silva",
-  "Cola Antón Morales"
+  "Carla Antón Morales"
 ],
       "2º Marketing": [
   "Marta Franco",
@@ -458,24 +458,16 @@
   async function ensureRosterSynced() {
     if (!state.isEditor) return;
     const snap = await getDocs(STUDENTS_COL);
-    const existing = new Set(
-      snap.docs.map((d) => {
-        const v = d.data();
-        return `${(v.class || "").trim()}|${(v.name || "").trim()}`;
-      })
-    );
+    // Seed only once when the collection is empty.
+    // If a student is intentionally deleted, do not recreate it later.
+    if (!snap.empty) return;
     const batch = writeBatch(db);
-    let added = 0;
     for (const cls of INITIAL.classes) {
       for (const name of (INITIAL.studentsByClass[cls] || [])) {
-        const key = `${cls}|${name}`;
-        if (existing.has(key)) continue;
         const ref = doc(STUDENTS_COL);
         batch.set(ref, { name, class: cls, bus:false, ent:false, createdAt: Date.now() });
-        added++;
       }
     }
-    if (!added) return;
     await batch.commit();
   }
 
