@@ -226,6 +226,9 @@
         <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas)</span><br>
       </div>
     </div>
+    <div id="loginWarning" class="err small" style="margin-top:10px;">
+      Inicia sesion para ver los datos.
+    </div>
 
     <div class="auth-box">
       <div id="authMode" class="hint small" style="display:none;"></div>
@@ -422,8 +425,8 @@
       $("gKpiRecaudado").textContent = "—";
       $("gKpiPendBus").textContent = "—";
       $("gKpiPendEnt").textContent = "—";
-      $("gPendingSummary").textContent = "Inicia sesion para ver datos.";
-      $("gPaidSummary").textContent = "Inicia sesion para ver datos.";
+      $("gPendingSummary").textContent = "Pendientes: —";
+      $("gPaidSummary").textContent = "Pagado completo: —";
       $("gPaidProgressFill").style.width = "0%";
 
       $("kpiAlumnos").textContent = "—";
@@ -431,8 +434,8 @@
       $("kpiRecaudado").textContent = "—";
       $("kpiPendBus").textContent = "—";
       $("kpiPendEnt").textContent = "—";
-      $("pendingSummary").textContent = "Inicia sesion para ver datos.";
-      $("paidSummary").textContent = "Inicia sesion para ver datos.";
+      $("pendingSummary").textContent = "Pendientes: —";
+      $("paidSummary").textContent = "Pagado completo: —";
       $("paidProgressFill").style.width = "0%";
       return;
     }
@@ -471,6 +474,7 @@
     $("editorPass").disabled = canView;
     $("btnLoginEditor").style.display = canView ? "none" : "inline-block";
     $("btnLogoutEditor").style.display = canView ? "inline-block" : "none";
+    $("loginWarning").style.display = canView ? "none" : "block";
 
     const authMode = $("authMode");
     if (canView) {
@@ -489,7 +493,7 @@
     tbody.innerHTML = "";
     if (!state.isLoggedIn) {
       const tr = document.createElement("tr");
-      tr.innerHTML = '<td colspan="6" class="muted">Inicia sesion para ver los datos.</td>';
+      tr.innerHTML = '<td colspan="6" class="muted">Acceso restringido.</td>';
       tbody.appendChild(tr);
       return;
     }
