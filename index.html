@@ -207,6 +207,27 @@
       font-weight:800;
     }
     .btn[disabled], input[disabled] { opacity:.55; cursor:not-allowed; }
+    .mini-link {
+      margin-left:8px;
+      border:0;
+      background:transparent;
+      color:var(--victoria-green-dark);
+      font:700 12px "Montserrat", "Segoe UI", sans-serif;
+      cursor:pointer;
+      text-decoration:underline;
+      padding:0;
+    }
+    .mini-link[disabled] { opacity:.5; cursor:not-allowed; }
+    .bus-none {
+      font-size:12px;
+      font-weight:700;
+      color:#6b5b28;
+      background:#fff2cf;
+      border:1px solid #efdca8;
+      border-radius:999px;
+      padding:3px 7px;
+      display:inline-block;
+    }
     @media (max-width: 680px) {
       .header-title { font-size:16px; }
       th, td { padding:10px 6px; }
@@ -225,7 +246,7 @@
   <section class="card card-top">
     <div class="row" style="margin-top:10px;">
       <div>
-        <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas)</span><br>
+        <b>Total:</b> 25€ <span class="muted">(11€ autobús + 14€ Entre ramas, o 14€ si no viaja en autobús)</span><br>
       </div>
     </div>
     <div id="loginWarning" class="err small" style="margin-top:10px;">
@@ -245,7 +266,7 @@
     <div class="summary-title">Resumen global (todas las clases)</div>
     <div class="kpi">
       <div class="kpi-alumnos"><span class="muted">Alumnos</span><b id="gKpiAlumnos">—</b></div>
-      <div class="kpi-pagados"><span class="muted">Pagados (25€)</span><b id="gKpiPagados">—</b></div>
+      <div class="kpi-pagados"><span class="muted">Pagados (completo)</span><b id="gKpiPagados">—</b></div>
       <div class="kpi-recaudado"><span class="muted">Recaudado</span><b id="gKpiRecaudado">—</b></div>
       <div class="kpi-pend-bus"><span class="muted">Pendiente autobús</span><b id="gKpiPendBus">—</b></div>
       <div class="kpi-pend-ent"><span class="muted">Pendiente entre ramas</span><b id="gKpiPendEnt">—</b></div>
@@ -264,7 +285,7 @@
     <div class="summary-title">Resumen por clase (seleccionada)</div>
     <div class="kpi">
       <div class="kpi-alumnos"><span class="muted">Alumnos</span><b id="kpiAlumnos">—</b></div>
-      <div class="kpi-pagados"><span class="muted">Pagados (25€)</span><b id="kpiPagados">—</b></div>
+      <div class="kpi-pagados"><span class="muted">Pagados (completo)</span><b id="kpiPagados">—</b></div>
       <div class="kpi-recaudado"><span class="muted">Recaudado</span><b id="kpiRecaudado">—</b></div>
       <div class="kpi-pend-bus"><span class="muted">Pendiente autobús</span><b id="kpiPendBus">—</b></div>
       <div class="kpi-pend-ent"><span class="muted">Pendiente entre ramas</span><b id="kpiPendEnt">—</b></div>
@@ -373,12 +394,14 @@
   }
 
   function calcPaid(s) {
-    const paid = (s.bus ? PRICE_BUS : 0) + (s.ent ? PRICE_ENT : 0);
+    const busRequired = s.busRequired !== false;
+    const due = (busRequired ? PRICE_BUS : 0) + PRICE_ENT;
+    const paid = ((busRequired && s.bus) ? PRICE_BUS : 0) + (s.ent ? PRICE_ENT : 0);
     let status="Pendiente", cls="no";
     if (paid === 0) { status="Pendiente"; cls="no"; }
-    else if (paid === PRICE_TOTAL) { status="Pagado"; cls="ok"; }
+    else if (paid === due) { status="Pagado"; cls="ok"; }
     else { status="Parcial"; cls="mid"; }
-    return { paid, status, cls };
+    return { paid, due, status, cls, isComplete: paid === due };
   }
 
   function renderTabsAndSelect() {
@@ -408,10 +431,10 @@
     const totalStudents = students.length;
     let recaudado = 0, pagados = 0, pendingBus = 0, pendingEnt = 0;
     for (const s of students) {
-      const { paid } = calcPaid(s);
+      const { paid, isComplete } = calcPaid(s);
       recaudado += paid;
-      if (paid === PRICE_TOTAL) pagados++;
-      if (!s.bus) pendingBus += PRICE_BUS;
+      if (isComplete) pagados++;
+      if (s.busRequired !== false && !s.bus) pendingBus += PRICE_BUS;
       if (!s.ent) pendingEnt += PRICE_ENT;
     }
     const pendingCount = totalStudents - pagados;
@@ -515,6 +538,7 @@
 
     for (const s of list) {
       const { paid, status, cls } = calcPaid(s);
+      const busRequired = s.busRequired !== false;
 
       const tr = document.createElement("tr");
 
@@ -526,13 +550,41 @@
       const cbBus = document.createElement("input");
       cbBus.type = "checkbox";
       cbBus.className = "checkbox";
-      cbBus.checked = !!s.bus;
-      cbBus.disabled = !state.isEditor;
+      cbBus.checked = busRequired && !!s.bus;
+      cbBus.disabled = !state.isEditor || !busRequired;
       cbBus.onchange = async () => {
         try { await updateDoc(doc(STUDENTS_COL, s.id), { bus: cbBus.checked }); }
         catch { alert("No se pudo guardar. Revisa conexión/reglas."); cbBus.checked = !cbBus.checked; }
       };
-      tdBus.appendChild(cbBus);
+      if (busRequired) {
+        tdBus.appendChild(cbBus);
+        const btnNoBus = document.createElement("button");
+        btnNoBus.type = "button";
+        btnNoBus.className = "mini-link";
+        btnNoBus.textContent = "No viaja";
+        btnNoBus.disabled = !state.isEditor;
+        btnNoBus.onclick = async () => {
+          try { await updateDoc(doc(STUDENTS_COL, s.id), { busRequired: false, bus: false }); }
+          catch { alert("No se pudo guardar. Revisa conexión/reglas."); }
+        };
+        tdBus.appendChild(btnNoBus);
+      } else {
+        const noBusTag = document.createElement("span");
+        noBusTag.className = "bus-none";
+        noBusTag.textContent = "No viaja";
+        tdBus.appendChild(noBusTag);
+
+        const btnWithBus = document.createElement("button");
+        btnWithBus.type = "button";
+        btnWithBus.className = "mini-link";
+        btnWithBus.textContent = "Usa bus";
+        btnWithBus.disabled = !state.isEditor;
+        btnWithBus.onclick = async () => {
+          try { await updateDoc(doc(STUDENTS_COL, s.id), { busRequired: true, bus: false }); }
+          catch { alert("No se pudo guardar. Revisa conexión/reglas."); }
+        };
+        tdBus.appendChild(btnWithBus);
+      }
 
       const tdEnt = document.createElement("td");
       tdEnt.className = "right";
@@ -603,7 +655,7 @@
     const name = $("newName").value.trim();
     if (!name) return;
     try {
-      await addDoc(STUDENTS_COL, { name, class: state.clase, bus:false, ent:false, createdAt: Date.now() });
+      await addDoc(STUDENTS_COL, { name, class: state.clase, bus:false, ent:false, busRequired:true, createdAt: Date.now() });
       $("newName").value = "";
     } catch {
       alert("No se pudo añadir. Revisa conexión/reglas.");
@@ -651,7 +703,14 @@
       unsubscribeStudents = onSnapshot(query(STUDENTS_COL), (snap) => {
         state.students = snap.docs.map(d => {
           const v = d.data();
-          return { id:d.id, name:v.name||"", class:v.class||"", bus:!!v.bus, ent:!!v.ent };
+          return {
+            id:d.id,
+            name:v.name||"",
+            class:v.class||"",
+            bus:!!v.bus,
+            ent:!!v.ent,
+            busRequired: v.busRequired !== false
+          };
         });
         renderAll();
       }, (err) => {
