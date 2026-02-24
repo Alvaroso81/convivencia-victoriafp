@@ -353,6 +353,7 @@
   const INITIAL = {
     classes: ["1º DAM","2º DAM","1º ASIR","1º Marketing","2º Marketing"]
   };
+  const VISIBLE_CLASSES = new Set(INITIAL.classes);
 
   const PRICE_BUS = 11, PRICE_ENT = 14, PRICE_TOTAL = 25;
 
@@ -711,7 +712,7 @@
             ent:!!v.ent,
             busRequired: v.busRequired !== false
           };
-        });
+        }).filter(s => VISIBLE_CLASSES.has(s.class));
         renderAll();
       }, (err) => {
         console.error(err);
